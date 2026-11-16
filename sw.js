@@ -1,3 +1,14 @@
-const cacheName='tideforge-'+self.registration.scope+'-1';
-self.oninstall=e=>e.waitUntil(caches.open(cacheName).then(c=>c.addAll(['./','./index.html','./game.js','./manifest.json','./icon192.png','./icon512.png'])));
-self.onfetch=e=>{if(e.request.method==='GET')e.respondWith(caches.open(cacheName).then(async c=>await c.match(e.request)||await fetch(e.request)))};
+const CACHE='tideforge-wild-tides-v3.0.0';
+const FILES=['./','./index.html','./style.css','./model.js','./app.js','./manifest.json','./icon192.png','./icon512.png'];
+self.addEventListener('install',event=>{
+ event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch',event=>{
+ if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
+ event.respondWith(caches.open(CACHE).then(async cache=>{
+  const saved=await cache.match(event.request);
+  if(saved)return saved;
+  return fetch(event.request);
+ }));
+});
