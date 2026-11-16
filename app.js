@@ -8,16 +8,25 @@ try{
  if(raw){state=G.normalize(JSON.parse(raw));loaded=true;}
 }catch{storageError=true;}
 const offlineSeconds=loaded?G.offline(state):0;
+const art=new Image();art.src='./assets/atlas.webp';
+const spriteIndex={tree:0,rock:1,iron:2,copper:3,crystal:4,Drill:5,'Copper drill':5,Furnace:6,Depot:7,Sawmill:8,Quarry:9,'Gel furnace':10,'Wire mill':11,'Steel forge':12,'Crystal rig':13,Mint:14};
+let audioEnabled=true,audioContext=null;
+let effects=[],gatherCombo=0,lastGather=0,boostTime=0,boostCooldown=0,salvage=null;
 let currentTab='Island',buildType=null,direction=0,selected=null,moving=null,zoom=2.7,pan={x:0,y:0},pointer=null;
 let expedition=null,fishing=null,lastFrame=performance.now(),tickAccumulator=0,toastTimer,saveAccumulator=0;
 const arrows=['→','↓','←','↑'],directionNames=['East','South','West','North'];
 const icons={wood:'🪵',stone:'◈',ore:'◆',bars:'▰',gel:'●',copper:'◆',wire:'⌁',crystal:'✦',gears:'⚙',steel:'▰',fish:'♒',coins:'●'};
 function make(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;}
-function button(label,fn,disabled=false,className=''){const b=make('button',className,label);b.disabled=disabled;b.onclick=fn;return b;}
+function button(label,fn,disabled=false,className=''){const b=make('button',className,label);b.disabled=disabled;b.onclick=()=>{sound('click');fn();};return b;}
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3000);}
+function pendingCargo(){
+ if(expedition)return expedition.loot;
+ if(salvage)return Object.fromEntries(Object.entries(salvage.loot).map(([k,n])=>[k,salvage.traps>=2?Math.floor(n/2):n]));
+ return null;
+}
 function persist(){
  state.savedAt=Date.now();
- try{localStorage.setItem(saveKey,JSON.stringify({...state,pendingLoot:expedition?expedition.loot:null}));}catch{if(!storageError)toast('Saving is unavailable. Export a backup in Settings.');storageError=true;}
+ try{localStorage.setItem(saveKey,JSON.stringify({...state,pendingLoot:pendingCargo()}));}catch{if(!storageError)toast('Saving is unavailable. Export a backup in Settings.');storageError=true;}
 }
 function changed(){persist();renderHUD();renderSelection();}
 function costText(cost){return Object.entries(cost).map(([k,n])=>n+' '+G.resources[k]).join(' · ');}
@@ -25,11 +34,13 @@ function costNode(cost){const div=make('div','cost');for(const [k,n]of Object.en
 function dialog(title,body){$('dialogTitle').textContent=title;$('dialogBody').replaceChildren(body);if(!$('dialog').open)$('dialog').showModal();}
 $('closeDialog').onclick=()=>$('dialog').close();
 function renderHUD(){
- $('resourceBar').replaceChildren(...Object.keys(G.resources).filter(k=>['wood','stone','bars','gel','coins'].includes(k)||state.inventory[k]>0).map(k=>{const el=make('span','resource',icons[k]+' '+G.resources[k]+' ');el.append(make('b','',String(state.inventory[k])));return el;}));
+ $('resourceBar').replaceChildren(...Object.keys(G.resources).filter(k=>['wood','stone','bars','gel'].includes(k)).map(k=>{const el=make('span','resource',icons[k]+' '+G.resources[k]+' ');el.append(make('b','',String(state.inventory[k])));return el;}));
  const index=G.quests.findIndex((q,i)=>!state.claimed.includes(i)),q=G.quests[index];
  $('objective').replaceChildren(make('strong','',q?'QUEST · '+q.name:'THE BEACON IS LIT'));
  $('objective').append(document.createTextNode(q?q.goal+(q.progress?' · '+Math.min(...q.progress(state))+'/'+q.progress(state)[1]:''):'Keep expanding your island and mastering the expeditions.'));
  $('islandLabel').textContent='Saltwind · radius '+state.radius;
+ $('overdrive').textContent=boostTime>0?'ϟ '+Math.ceil(boostTime)+'s':boostCooldown>0?'ϟ '+Math.ceil(boostCooldown)+'s':'ϟ Boost';
+ $('overdrive').disabled=boostCooldown>0;
  $('rotateButton').textContent='↻ '+directionNames[direction];
  $('gatherButton').className=buildType||moving?'':'chosen';
  $('buildHint').textContent=moving?'Tap a valid destination. Gather cancels the move.':buildType?buildType+' · '+costText(G.machines[buildType].cost)+' · Tap to place.':'Tap trees, rocks or ore to gather. Tap a machine to manage it. Drag to pan.';
@@ -37,8 +48,8 @@ function renderHUD(){
 $('objective').onclick=()=>navigate('Quests');
 const tabIcons={Island:'▦',Explore:'⚔',Craft:'⚙',Research:'✦',Quests:'☷',Harbour:'⚓'};
 function navigate(tab){
- if(expedition||fishing)return toast('Finish or leave the activity first.');
- currentTab=tab;
+ if(expedition||fishing||salvage)return toast('Finish or leave the activity first.');
+ currentTab=tab;document.body.dataset.tab=tab;
  $('islandView').classList.toggle('active',tab==='Island');
  $('contentView').classList.toggle('active',tab!=='Island');
  $('adventureView').classList.remove('active');
@@ -117,6 +128,7 @@ function renderExplore(){
  ['Prism Hollow','Fast crystal slimes. Bring an upgraded blade and hull.','crystal']
  ];
  areas.forEach(([name,desc,tech],i)=>{const locked=tech&&!state.tech[tech],c=card(name,desc);c.append(make('p','','Best wave · '+state.best[i]),button(locked?'Requires '+G.research[tech].name:'Sail · start wave 1',()=>startExpedition(i),locked,'gold'));p.append(c);});
+ const salvageCard=card('The wreck of the Starling','Flip sealed cargo tiles. Five picks, hidden treasure and two lurking traps. Bank early or risk another chest.');salvageCard.append(button('Search the wreck',startSalvage));p.append(salvageCard);
  const c=card('Moonpool fishing','Time your reel in the green zone. Consecutive catches build a bonus streak. Fish can be traded for gel or used in research.');
  c.append(button('Go fishing',startFishing));p.append(c);
 }
@@ -124,6 +136,7 @@ function openBuild(){
  const body=make('div','grid');
  for(const [type,def]of Object.entries(G.machines)){
   const locked=def.tech&&!state.tech[def.tech],c=card(type,def.desc);
+  c.prepend(spriteElement(spriteIndex[type]??5));
   c.append(costNode(def.cost),button(locked?'Research '+G.research[def.tech].name:'Select '+type,()=>{
    buildType=type;moving=null;selected=null;$('dialog').close();renderSelection();renderHUD();
   },locked,'gold'));body.append(c);
@@ -171,8 +184,15 @@ function mapTap(x,y){
  const resource={tree:'wood',rock:'stone',iron:'ore',copper:'copper',crystal:'crystal',grass:'wood'}[land];
  if(resource==='crystal'&&!state.tech.crystal)return toast('Research Prismatic engineering to gather crystals.');
  if(resource==='copper'&&!state.tech.copper)return toast('Research Copperworks to gather copper.');
- const amount=land==='tree'?3:land==='rock'?2:1;
- G.reward(state,{[resource]:amount});state.stats.gather++;floatText('+'+amount+' '+G.resources[resource],canvas.clientWidth/2,canvas.clientHeight/2);changed();
+ const amount=land==='tree'?3:land==='rock'?2:1;sound('gather');
+ const now=performance.now();gatherCombo=now-lastGather<1800?gatherCombo+1:1;lastGather=now;
+ const bonus=gatherCombo%8===0;
+ G.reward(state,{[resource]:bonus?amount*3:amount});
+ if(bonus){state.inventory.coins+=3;state.inventory.gel++;toast('Lucky haul! Triple gather + 3 coins + 1 gel');}
+ state.stats.gather++;
+ effects.push({x,y,text:'+'+(bonus?amount*3:amount)+' '+G.resources[resource],start:performance.now()});
+ if(navigator.vibrate)navigator.vibrate(bonus?30:8);
+ changed();
 }
 const canvas=$('world'),ctx=canvas.getContext('2d');
 const TILE=24;
@@ -186,36 +206,64 @@ $('zoomIn').onclick=()=>{zoom=Math.min(4.5,zoom+.3);pointer=null;};
 $('zoomOut').onclick=()=>{zoom=Math.max(1.5,zoom-.3);pointer=null;};
 $('center').onclick=()=>{pan={x:0,y:0};};
 function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.floor(x),Math.floor(y),w,h);}
+function spriteElement(index){
+ const el=make('span','gameSprite');
+ const x=index%4,y=Math.floor(index/4);
+ el.style.backgroundPosition=(x/3*100)+'% '+(y/3*100)+'%';
+ return el;
+}
+function drawSprite(index,x,y,width,height){
+ if(art.complete&&art.naturalWidth){
+  const cell=art.naturalWidth/4,row=art.naturalHeight/4;
+  ctx.drawImage(art,(index%4)*cell,Math.floor(index/4)*row,cell,row,x,y,width,height);
+ }
+}
 function drawMap(time){
- if(currentTab!=='Island'||expedition||fishing)return;
+ if(currentTab!=='Island'||expedition||fishing||salvage)return;
  const w=Math.max(1,Math.round(canvas.clientWidth/zoom)),h=Math.max(1,Math.round(canvas.clientHeight/zoom));
- if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;}
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=true;}
  const o=mapOrigin(),anim=time/1000;
- rect(0,0,w,h,'#25566a');
- for(let y=Math.floor(-o.y/TILE);y<(h-o.y)/TILE;y++)for(let x=Math.floor(-o.x/TILE);x<(w-o.x)/TILE;x++){
+ const water=ctx.createLinearGradient(0,0,0,h);water.addColorStop(0,'#227a80');water.addColorStop(1,'#103d58');ctx.fillStyle=water;ctx.fillRect(0,0,w,h);
+ for(let y=Math.floor(-o.y/TILE)-1;y<(h-o.y)/TILE+1;y++)for(let x=Math.floor(-o.x/TILE)-1;x<(w-o.x)/TILE+1;x++){
   const px=Math.floor(o.x+x*TILE),py=Math.floor(o.y+y*TILE),land=G.terrain(state,x,y),hash=Math.abs(x*31+y*13);
-  if(land==='sea'){rect(px+hash%12,py+8+Math.sin(anim+y)*2,7,1,'#40798a');rect(px+4,py+18,3,1,'#30697e');continue;}
-  rect(px,py,24,24,'#4f794c');rect(px+1,py+1,22,22,(x+y)%2?'#83a568':'#8daf70');
-  for(let i=0;i<5;i++)rect(px+(hash+i*7)%21,py+(hash+i*11)%21,2,1,'#b1c785');
-  if(G.terrain(state,x,y+1)==='sea'){rect(px,py+18,24,3,'#d7bc83');rect(px+1,py+21,22,3,'#8e7955');rect(px,py+24,24,2,'#153c50');}
-  const m=state.machines[x+','+y];
-  if(!m){
-   if(land==='tree'){rect(px+10,py+14,4,7,'#795641');for(let i=0;i<4;i++){rect(px+10-i*2,py+2+i*3,4+i*4,4,'#315b45');rect(px+10-i*2,py+2+i*3,2+i,2,'#58925a');}}
-   else if(['iron','rock','copper','crystal'].includes(land)){const colors={iron:['#536f83','#a0d5df'],rock:['#686f70','#b3b2a1'],copper:['#8f5f48','#e3a675'],crystal:['#665680','#c6a2ef']}[land];for(let i=0;i<3;i++){rect(px+4+i*5,py+9+i%2*4,7,7,colors[0]);rect(px+5+i*5,py+6+i%2*4,4,5,colors[1]);}}
+  if(land==='sea'){
+   rect(px+hash%12,py+8+Math.sin(anim+y)*2,7,1,'#66c7c134');
+   if(hash%13===0){rect(px+9+Math.sin(anim*.4)*3,py+16,3,1,'#9de0c63a');}
    continue;
   }
-  const def=G.machines[m.type],belt=m.type==='Belt';
-  rect(px+2,py+6,21,17,'#304445');rect(px+3,py+4,18,16,belt?'#495857':'#657771');rect(px+4,py+5,16,2,'#b6b69a');
-  if(belt){rect(px+5,py+7,14,10,'#283b3f');for(let i=0;i<3;i++)rect(px+6+(i*4+Math.floor(anim*3))%12,py+8,1,8,'#8c9981');}
-  else if(m.type.includes('furnace')||m.type==='Furnace'||m.type==='Steel forge'){rect(px+5,py+1,5,7,'#5d6361');rect(px+6,py+9,12,9,m.type==='Gel furnace'?'#619c6e':'#c18550');rect(px+9,py+12,6,4,Math.floor(anim*3)%2?'#ffd480':'#f2a55c');rect(px+6,py-3-Math.floor(anim*4)%4,3,3,'#bdd1c084');}
-  else if(m.type==='Depot'){rect(px+4,py+5,16,13,'#a57b50');for(let i=0;i<3;i++)rect(px+5,py+6+i*4,14,1,'#e0b97b');rect(px+11,py+5,2,13,'#725743');}
-  else if(m.type.includes('drill')||m.type==='Drill'||m.type==='Crystal rig'){rect(px+5,py+5,14,3,'#dbb775');rect(px+8,py+8,8,5,'#ad794d');rect(px+11,py+13,2,4+Math.floor(anim*3)%2,'#d8d9bd');}
-  else {rect(px+6,py+8,12,8,m.type==='Mint'?'#d4af65':m.type==='Sawmill'?'#bd9565':'#90a6a4');rect(px+9,py+9,6,6,'#3c5658');rect(px+11,py+8+(Math.floor(anim*3)%2)*2,2,6,'#d2d9bd');}
-  if(!def.direct){ctx.font='bold 9px monospace';ctx.fillStyle='#fff0ba';ctx.fillText(arrows[m.d],px+15,py+22);}
-  if(m.item){rect(px+5,py+9,4,4,({ore:'#9ad3e2',bars:'#e4e4ce',copper:'#e8a06b',wire:'#eac588',steel:'#a4c5d6',crystal:'#dab1ff',coins:'#ffde82'})[m.item]||'#a0dc85');}
-  if(m.paused){rect(px+7,py+8,3,8,'#f5d89d');rect(px+13,py+8,3,8,'#f5d89d');}
-  if(selected===x+','+y){ctx.strokeStyle='#ffe2a0';ctx.lineWidth=1;ctx.strokeRect(px+.5,py+.5,23,23);}
+  rect(px,py,24,24,['#73a76c','#76aa6e','#79ad71'][hash%3]);
+  for(let i=0;i<3;i++)rect(px+(hash+i*7)%23,py+(hash+i*11)%23,1,1,'#b6d59155');
+  if(G.terrain(state,x,y+1)==='sea'){rect(px,py+19,24,3,'#d6c28c');rect(px,py+22,24,3,'#9b8a5e');rect(px,py+25,24,2,'#51bbb477');}
+  if(G.terrain(state,x-1,y)==='sea')rect(px,py,2,23,'#d6c28c');
+  if(G.terrain(state,x+1,y)==='sea')rect(px+22,py,2,23,'#d6c28c');
+  if(G.terrain(state,x,y-1)==='sea')rect(px,py,24,2,'#d6c28c');
  }
+ // Separate terrain and sprite passes keep tall objects layered correctly.
+ for(let y=Math.floor(-o.y/TILE)-1;y<(h-o.y)/TILE+2;y++)for(let x=Math.floor(-o.x/TILE)-1;x<(w-o.x)/TILE+1;x++){
+  const px=Math.floor(o.x+x*TILE),py=Math.floor(o.y+y*TILE),land=G.terrain(state,x,y);
+  if(land==='sea')continue;
+  const id=x+','+y,m=state.machines[id];
+  if(buildType||moving){ctx.strokeStyle='#edf5b52b';ctx.lineWidth=.4;ctx.strokeRect(px,py,24,24);}
+  if(!m){if(spriteIndex[land]!==undefined)drawSprite(spriteIndex[land],px-1,py-9,27,32);continue;}
+  const def=G.machines[m.type];
+  ctx.fillStyle='#173d3338';ctx.beginPath();ctx.ellipse(px+12,py+20,10,3,0,0,Math.PI*2);ctx.fill();
+  if(m.type==='Belt'){
+   rect(px+2,py+5,20,17,'#344e4b');rect(px+4,py+7,16,12,'#182c30');
+   for(let i=0;i<4;i++)rect(px+5+(i*4+Math.floor(anim*5))%15,py+8,1,10,'#9d9474');
+  }else drawSprite(spriteIndex[m.type]??5,px-2,py-9,29,32);
+  if(!def.direct){
+   rect(px+15,py+15,9,9,'#112c31dd');ctx.font='bold 9px monospace';ctx.fillStyle='#ffe2a0';ctx.fillText(arrows[m.d],px+16,py+22);
+  }
+  if(m.item){
+   const colors={ore:'#a5e0ed',bars:'#f6e6ba',copper:'#f0b27e',wire:'#facb83',steel:'#a4c5d6',crystal:'#dab1ff',coins:'#ffde82'};
+   const move=(anim%1)*4;
+   rect(px+8+move,py+11,4,4,colors[m.item]||'#a0dc85');rect(px+8+move,py+11,2,1,'#ffffffaa');
+  }
+  if(m.paused){rect(px+7,py+8,3,8,'#f5d89d');rect(px+13,py+8,3,8,'#f5d89d');}
+  if(selected===id){ctx.strokeStyle='#ffe2a0';ctx.lineWidth=1;ctx.strokeRect(px+.5,py+.5,23,23);}
+ }
+ effects=effects.filter(e=>time-e.start<900);
+ for(const e of effects){const age=(time-e.start)/900;ctx.globalAlpha=1-age;ctx.font='bold 7px system-ui';ctx.textAlign='center';ctx.fillStyle='#fff3bb';ctx.strokeStyle='#21423c';ctx.lineWidth=2;const x=o.x+e.x*24+12,y=o.y+e.y*24-6-age*16;ctx.strokeText(e.text,x,y);ctx.fillText(e.text,x,y);ctx.textAlign='start';ctx.globalAlpha=1;}
 }
 function adventureScreen(){
  $('dialog').close();$('islandView').classList.remove('active');$('contentView').classList.remove('active');$('adventureView').classList.add('active');
@@ -223,17 +271,17 @@ function adventureScreen(){
 function floatText(text,x,y,host=$('arena')){
  const el=make('span','hit',text);el.style.left=x+'px';el.style.top=y+'px';host.append(el);setTimeout(()=>el.remove(),500);
 }
-function slimeArt(color){
- return '<svg viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><path fill="#122b35" d="M4 12h3V7h5V4h8v3h5v5h3v12h-3v3H7v-3H4z"/><path fill="'+color+'" d="M6 13h3V9h5V6h4v3h5v4h3v10H6z"/><path fill="#d4f5ba" opacity=".45" d="M10 11h4v3h-4zM8 16h2v3H8z"/><path fill="#17353b" d="M13 16h3v4h-3zM21 16h3v4h-3zM17 22h3v2h-3z"/></svg>';
-}
+function slimeArt(color){return '<span class="slimeSprite" style="filter:drop-shadow(0 5px 3px #071e2c55)"></span>';}
 function startExpedition(area){
  adventureScreen();
- expedition={area,wave:0,hearts:5+state.armour,slimes:[],spawned:0,killed:0,escaped:0,totalKills:0,loot:{gel:0},mode:'intermission',clock:0,spawnClock:0,nextId:0};
+ expedition={area,wave:0,hearts:5+state.armour,slimes:[],spawned:0,killed:0,escaped:0,totalKills:0,loot:{gel:0},mode:'intermission',clock:0,spawnClock:0,nextId:0,damage:0,chain:0,freeze:0,combo:0,lastHit:0,powerCooldown:0};
  beginWave();
 }
 function beginWave(){
  const e=expedition;e.wave++;e.mode='fight';e.spawned=0;e.killed=0;e.escaped=0;e.clock=0;e.spawnClock=.8;e.target=4+e.wave*2;
- $('arena').replaceChildren();$('adventureControls').replaceChildren(button('Retreat & bank loot',()=>finishExpedition(false)));
+ $('arena').replaceChildren();const row=make('div','row');
+ row.append(button('❄ Freeze',freezeSlimes,false,'gold'),button('Retreat & bank loot',()=>finishExpedition(false)));
+ $('adventureControls').replaceChildren(row);
  renderExpeditionHeader();
 }
 function renderExpeditionHeader(){
@@ -245,28 +293,35 @@ function spawnSlime(){
  const hp=(2+e.area*3+Math.floor(e.wave/2))*(boss?4:1),el=button('',()=>hitSlime(slime.id));
  const slime={id:e.nextId++,x:Math.random()*.78+.01,y:-.16,hp,max:hp,speed:(.055+e.wave*.005+e.area*.014)*(boss?.65:1),el,boss};
  el.className='slime';el.setAttribute('aria-label',boss?'Slime boss':'Slime');el.innerHTML=slimeArt(boss?'#e0ac73':['#91c66c','#d5a56b','#c2a4e9'][e.area]);el.append(make('b','',hp+' HP'));
- if(boss){el.style.width='84px';el.style.height='78px';}
+ if(boss){el.classList.add('boss');el.style.width='96px';el.style.height='90px';}else if(e.spawned%4===3){slime.speed*=1.4;el.classList.add('swift');}
  e.slimes.push(slime);e.spawned++;$('arena').append(el);
 }
 function hitSlime(id){
  const e=expedition;if(!e||e.mode!=='fight'||$('dialog').open)return;
  const index=e.slimes.findIndex(s=>s.id===id);if(index<0)return;
- const slime=e.slimes[index];slime.hp-=state.weapon;slime.el.querySelector('b').textContent=Math.max(0,slime.hp)+' HP';
- floatText('−'+state.weapon,slime.el.offsetLeft+20,slime.el.offsetTop+10);
+ const slime=e.slimes[index];const damage=state.weapon+e.damage;slime.hp-=damage;
+ e.combo=performance.now()-e.lastHit<1400?e.combo+1:1;e.lastHit=performance.now();
+ slime.el.classList.remove('struck');void slime.el.offsetWidth;slime.el.classList.add('struck');slime.el.querySelector('b').textContent=Math.max(0,slime.hp)+' HP';
+ floatText('−'+damage,slime.el.offsetLeft+20,slime.el.offsetTop+10);
  if(slime.hp<=0){
-  slime.el.remove();e.slimes.splice(index,1);e.killed++;e.totalKills++;state.stats.kills++;
+  sound('pop');slime.el.remove();e.slimes.splice(index,1);e.killed++;e.totalKills++;state.stats.kills++;
   const gel=(slime.boss?5:1)+e.area;e.loot.gel+=gel;
   const extra=['ore','copper','crystal'][e.area];e.loot[extra]=(e.loot[extra]||0)+(slime.boss?3:1);
+  if(e.chain>0){
+   for(const other of e.slimes.slice(0,e.chain)){other.hp=Math.max(1,other.hp-1-e.damage);other.el.querySelector('b').textContent=other.hp+' HP';other.el.classList.add('struck');}
+  }
+  if(e.combo%5===0){e.loot.gel+=2;floatText('COMBO +2 GEL',60,100);}
   persist();renderExpeditionHeader();
  }
 }
 function updateExpedition(dt){
  const e=expedition;if(!e||e.mode!=='fight'||$('dialog').open)return;
- e.clock+=dt;e.spawnClock+=dt;
+ e.clock+=dt;e.spawnClock+=dt;e.freeze=Math.max(0,e.freeze-dt);e.powerCooldown=Math.max(0,e.powerCooldown-dt);
+ const power=$('adventureControls').querySelector('button');if(power){power.disabled=e.powerCooldown>0;power.textContent=e.powerCooldown>0?'❄ '+Math.ceil(e.powerCooldown)+'s':'❄ Freeze';}
  if(e.spawned<e.target&&e.spawnClock>Math.max(.55,1.5-e.wave*.055)){e.spawnClock=0;spawnSlime();}
  const height=$('arena').clientHeight,width=$('arena').clientWidth;
  for(let i=e.slimes.length-1;i>=0;i--){
-  const s=e.slimes[i];s.y+=dt*s.speed;s.el.style.left=s.x*Math.max(1,width-84)+'px';s.el.style.top=s.y*height+'px';
+  const s=e.slimes[i];s.y+=dt*s.speed*(e.freeze>0?.12:1);s.el.style.left=(s.x*Math.max(1,width-96)+Math.sin(e.clock*2+s.id)*5)+'px';s.el.style.top=s.y*height+'px';
   if(s.y>.88){s.el.remove();e.slimes.splice(i,1);e.escaped++;e.hearts-=s.boss?2:1;renderExpeditionHeader();}
  }
  if(e.hearts<=0)return finishExpedition(true);
@@ -275,8 +330,13 @@ function updateExpedition(dt){
   const bonus=2+e.wave;e.loot.gel+=bonus;persist();
   $('arena').replaceChildren(make('div','waveBanner','Wave cleared! +'+bonus+' gel'));
   renderExpeditionHeader();
-  const row=make('div','row');row.append(button('Bank loot & sail home',()=>finishExpedition(false),false,'gold'),button('Next wave →',beginWave));
-  $('adventureControls').replaceChildren(row,make('p','muted','Your hull stays damaged. Defeat banks half your cargo. Retreat keeps it all.'));
+  const choices=make('div','perkChoices');
+ choices.append(make('strong','','Choose a power for your next wave'));
+ for(const [label,desc,kind]of [['Razor leaf','+1 damage on every tap','damage'],['Storm link','Wound an extra nearby slime','chain'],['Patch the hull','Recover 2 hearts','repair']]){
+  const b=button('',()=>choosePerk(kind));b.append(make('b','',label),make('small','',desc));choices.append(b);
+ }
+ choices.append(button('Bank loot & sail home',()=>finishExpedition(false),false,'gold'));
+ $('adventureControls').replaceChildren(choices);
  }
 }
 function finishExpedition(defeat){
@@ -287,7 +347,7 @@ function finishExpedition(defeat){
 function startFishing(){
  adventureScreen();fishing={phase:Math.random()*6,pos:0,zone:.32+Math.random()*.28,width:.18+state.rod*.035,streak:0,catches:0,ready:true,cooldown:0};
  $('adventureHeader').replaceChildren(make('div','eyebrow','Moonpool Cove'),make('h2','','Wait for the green'),make('p','muted','Tap REEL as the gold marker crosses the green zone.'));
- const art=make('div','fishArt','♒'),track=make('div','fishingTrack'),zone=make('div','catchZone'),bobber=make('div','bobber');
+ const art=make('div','fishArt',''),track=make('div','fishingTrack'),zone=make('div','catchZone'),bobber=make('div','bobber');
  track.append(zone,bobber);$('arena').replaceChildren(art,track,make('p','muted','Tap timing · no bait needed'));
  const row=make('div','row');row.append(button('REEL',reelFish,false,'gold'),button('Sail home',()=>{fishing=null;navigate('Explore');}));
  $('adventureControls').replaceChildren(row,make('p','muted','Catch streak · 0'));
@@ -309,7 +369,9 @@ function reelFish(){
 }
 $('settingsButton').onclick=()=>{
  const body=make('div','settings');
- body.append(make('p','','Tideforge · Wild Tides v3. Your island saves automatically on this device. Factory progress continues for up to two hours away.'),
+ body.append(make('p','','Tideforge · Treasure Tides v4. Your island saves automatically on this device. Factory progress continues for up to two hours away.'),
+ button('Inventory & cargo',showInventory),
+ button('Sound · '+(audioEnabled?'on':'off'),()=>{audioEnabled=!audioEnabled;toast('Sound '+(audioEnabled?'on':'off'));$('dialog').close();}),
  button('How to build',showHelp),
  button('Export save',exportSave),
  button('Import save',()=>$('importFile').click()),
@@ -318,7 +380,7 @@ $('settingsButton').onclick=()=>{
   else toast('In your browser menu choose Install app or Add to home screen. Open the website online once for offline play.');
  }),
  button('Start a new island',()=>{
-  if(expedition||fishing)return toast('Leave the activity before starting over.');
+  if(expedition||fishing||salvage)return toast('Leave the activity before starting over.');
   const confirm=make('div','settings');confirm.append(make('p','','This clears this island. Export your save first if you want to keep it.'),button('Export current save',exportSave),button('Confirm new island',()=>{state=G.fresh();pan={x:0,y:0};buildType=null;selected=null;moving=null;changed();$('dialog').close();navigate('Island');}));dialog('Start over?',confirm);
  }));
  if(storageError)body.prepend(make('p','notice','Device saving could not be accessed. Use Export save to keep your island.'));
@@ -326,17 +388,17 @@ $('settingsButton').onclick=()=>{
 };
 function showHelp(){
  const body=make('div');
- body.append(make('p','','Tap natural tiles to gather. Green trees give timber, grey rocks give stone, blue seams give iron. Materials never run out.'),
+ body.append(button('Place my starter factory',starterFactory,false,'gold'),make('p','','Tap natural tiles to gather. Green trees give timber, grey rocks give stone, blue seams give iron. Materials never run out.'),
  make('p','','Open Build, choose a machine, then tap a valid tile. Use the direction button to choose its output before placing. Stay in build mode to place several.'),
  make('p','','First line: the blue iron seam two tiles left of the island center → Drill → Furnace → Depot. Face all arrows east. Belts can bridge longer gaps.'),
  make('p','','Switch to Gather / select and tap a machine. Turn changes that machine immediately. Move relocates it. More opens upgrades, cargo collection and dismantling. Dismantling refunds its building cost.'),
  make('p','','Sawmills need trees, quarries need rocks. These two send output straight to inventory. Processing machines need incoming cargo and a clear output.'),
  make('p','','Explore for slime gel and fish. Craft gears and improve tools. Research unlocks the next factory tier. Harbour expands the island and trades supplies. Quests guide the campaign.'),
- button('Build on my island',()=>{$('dialog').close();if(!expedition&&!fishing)navigate('Island');},false,'gold'));
+ button('Build on my island',()=>{$('dialog').close();if(!expedition&&!fishing&&!salvage)navigate('Island');},false,'gold'));
  dialog('Your island handbook',body);
 }
 function exportSave(){
- persist();const url=URL.createObjectURL(new Blob([JSON.stringify({...state,pendingLoot:expedition?expedition.loot:null},null,2)],{type:'application/json'})),a=make('a');
+ persist();const url=URL.createObjectURL(new Blob([JSON.stringify({...state,pendingLoot:pendingCargo()},null,2)],{type:'application/json'})),a=make('a');
  a.href=url;a.download='Tideforge-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Save file exported.');
 }
 $('importFile').onchange=async e=>{
@@ -344,7 +406,7 @@ $('importFile').onchange=async e=>{
  try{
   if(file.size>2e6)throw Error('Large file');
   const imported=G.normalize(JSON.parse(await file.text()));
-  if(expedition||fishing)return toast('Leave your activity before importing.');
+  if(expedition||fishing||salvage)return toast('Leave your activity before importing.');
   const body=make('div','settings');
   body.append(make('p','','Replace this island with the imported save?'),button('Export current save first',exportSave),button('Use imported island',()=>{state=imported;state.savedAt=Date.now();buildType=null;selected=null;moving=null;pan={x:0,y:0};changed();$('dialog').close();navigate('Island');toast('Island restored.');}));
   dialog('Import island',body);
@@ -365,11 +427,82 @@ function frame(now){
  const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
  if(!document.hidden){
   tickAccumulator+=dt;saveAccumulator+=dt;
-  if(tickAccumulator>=1){tickAccumulator-=1;G.step(state);renderHUD();if(selected)renderSelection();if(currentTab!=='Island'&&!expedition&&!fishing)renderContent();}
+  if(tickAccumulator>=1){tickAccumulator-=1;G.step(state);if(boostTime>0){G.step(state);G.step(state);}renderHUD();if(selected)renderSelection();if(currentTab!=='Island'&&!expedition&&!fishing&&!salvage)renderContent();}
   if(saveAccumulator>=5){saveAccumulator=0;persist();}
-  updateExpedition(dt);updateFishing(dt);drawMap(now);
+  boostTime=Math.max(0,boostTime-dt);boostCooldown=Math.max(0,boostCooldown-dt);updateExpedition(dt);updateFishing(dt);drawMap(now);
  }
  requestAnimationFrame(frame);
+}
+
+function sound(kind){
+ if(!audioEnabled)return;
+ try{
+  const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+  if(!audioContext)audioContext=new Audio();
+  if(audioContext.state==='suspended')audioContext.resume();
+  const osc=audioContext.createOscillator(),gain=audioContext.createGain(),now=audioContext.currentTime;
+  osc.type=kind==='pop'?'sine':'triangle';osc.frequency.setValueAtTime(kind==='pop'?550:kind==='gather'?680:380,now);osc.frequency.exponentialRampToValueAtTime(kind==='pop'?180:kind==='gather'?920:440,now+.09);
+  gain.gain.setValueAtTime(.035,now);gain.gain.exponentialRampToValueAtTime(.001,now+.12);osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+.13);
+ }catch{}
+}
+$('resourceBar').onclick=showInventory;
+function showInventory(){
+ const body=make('div','inventoryGrid');
+ for(const [k,label]of Object.entries(G.resources)){body.append(make('div','resource',icons[k]+' '+label+' · '+state.inventory[k]));}
+ dialog('Inventory & cargo',body);
+}
+function starterFactory(){
+ if(Object.keys(state.machines).length)return toast('Your island already has machines. Use Build to extend it.');
+ const total={wood:20,stone:11};
+ if(!G.afford(state,total))return toast('Gather 20 timber and 11 stone first.');
+ for(const [type,x]of [['Drill',-2],['Furnace',-1],['Depot',0]])G.place(state,type,x,0,0);
+ $('dialog').close();navigate('Island');changed();toast('Your first production line is running!');
+}
+function freezeSlimes(){if(!expedition||expedition.powerCooldown>0||expedition.mode!=='fight')return;expedition.freeze=3;expedition.powerCooldown=12;toast('Frost burst! Slimes slowed for 3 seconds.');}
+function choosePerk(kind){
+ const e=expedition;if(!e||e.mode!=='intermission')return;
+ if(kind==='damage')e.damage++;
+ if(kind==='chain')e.chain++;
+ if(kind==='repair')e.hearts=Math.min(5+state.armour,e.hearts+2);
+ beginWave();
+}
+$('overdrive').onclick=()=>{
+ if(boostCooldown>0)return;
+ boostTime=20;boostCooldown=60;renderHUD();toast('Factory overdrive! Triple production for 20 seconds.');
+};
+function startSalvage(){
+ adventureScreen();const tiles=Array.from({length:12},(_,i)=>i<2?'trap':i<5?'rare':'supplies');
+ for(let i=tiles.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tiles[i],tiles[j]]=[tiles[j],tiles[i]];}
+ salvage={tiles,revealed:[],picks:5,traps:0,loot:{},done:false};renderSalvage();
+}
+function renderSalvage(){
+ const s=salvage;if(!s)return;
+ $('adventureHeader').replaceChildren(make('div','eyebrow','The wreck of the Starling'),make('h2','',s.done?'Your salvage haul':'What lies beneath?'),make('p','',s.picks+' picks · '+s.traps+'/2 traps · Cargo '+(costText(s.loot)||'empty')));
+ const grid=make('div','salvageGrid');
+ s.tiles.forEach((kind,i)=>{
+  const revealed=s.revealed.includes(i),b=button(revealed?(kind==='trap'?'✕':kind==='rare'?'✦':'▣'):'?',()=>revealSalvage(i),revealed||s.done,'cargoTile '+(revealed?kind:'sealed'));
+  b.setAttribute('aria-label','Cargo tile '+(i+1));grid.append(b);
+ });
+ $('arena').replaceChildren(grid);
+ const row=make('div','row');row.append(button(s.done?'Collect & sail home':'Bank cargo & leave',finishSalvage,false,'gold'));
+ if(s.done)row.append(button('Search another wreck',()=>{finishSalvage(false);startSalvage();}));
+ $('adventureControls').replaceChildren(row);
+}
+function revealSalvage(i){
+ const s=salvage;if(!s||s.done||s.revealed.includes(i))return;s.revealed.push(i);s.picks--;
+ const kind=s.tiles[i];
+ if(kind==='trap'){s.traps++;toast('A flooded compartment! Two traps halve your cargo.');}
+ else {
+  const drop=kind==='rare'?{gel:3+Math.floor(Math.random()*4),gears:1,coins:4}:{wood:5,stone:3,coins:2};
+  for(const [k,n]of Object.entries(drop))s.loot[k]=(s.loot[k]||0)+n;
+  toast(kind==='rare'?'Rare supply cache! +gel, gears and coins':'Supplies recovered!');
+ }
+ s.done=s.picks===0||s.traps>=2;renderSalvage();persist();
+}
+function finishSalvage(goHome=true){
+ if(!salvage)return;
+ const loot=Object.fromEntries(Object.entries(salvage.loot).map(([k,n])=>[k,salvage.traps>=2?Math.floor(n/2):n]));
+ G.reward(state,loot);salvage=null;changed();if(goHome){navigate('Explore');toast('Cargo banked. '+(costText(loot)||'Try another wreck.'));}
 }
 navigate('Island');renderHUD();persist();requestAnimationFrame(frame);
 if(!loaded)showHelp();

@@ -1,5 +1,5 @@
-const CACHE='tideforge-wild-tides-v3.0.0';
-const FILES=['./','./index.html','./style.css','./model.js','./app.js','./manifest.json','./icon192.png','./icon512.png'];
+const CACHE='tideforge-treasure-tides-v4.0.0';
+const FILES=['./','./index.html','./style.css','./model.js','./app.js','./manifest.json','./icon192.png','./icon512.png','./assets/atlas.webp','./assets/frame.webp','./assets/marsh.webp'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));
 });

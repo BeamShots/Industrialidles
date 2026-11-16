@@ -1,1 +1,76 @@
 :root{color-scheme:dark;--ink:#102b31;--panel:#193b40;--line:#36565a;--gold:#f5cd81;--dim:#9fb8b2;--text:#f6edd6}*{box-sizing:border-box}body{margin:0;background:#071d24;color:var(--text);font:14px system-ui,-apple-system,sans-serif}button,input{font:inherit}button{cursor:pointer;touch-action:manipulation;min-height:44px;border:1px solid #426267;border-radius:9px;background:#25484d;color:var(--text);padding:9px 12px;font-weight:650}button:active{transform:translateY(1px);filter:brightness(1.25)}button:disabled{opacity:.46;cursor:default}button.gold,.activeTab{background:var(--gold);color:#302c25;border-color:var(--gold)}button.small{font-size:12px;padding:6px 10px}main{max-width:640px;margin:auto;height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);background:var(--ink)}header{display:flex;align-items:center;gap:10px;padding:10px 14px 7px}header img{width:43px;height:43px;border-radius:12px}h1{font:800 21px Georgia,serif;letter-spacing:2px;margin:0;color:var(--gold)}header span{font-size:9px;letter-spacing:2px;color:var(--dim)}header button{margin-left:auto;background:none;font-size:22px}#resourceBar{display:flex;gap:7px;overflow-x:auto;padding:6px 12px;flex-shrink:0;scrollbar-width:thin}.resource{white-space:nowrap;background:#23444a;padding:6px 10px;border-radius:7px;font-size:12px}.resource b{margin-left:4px;color:#fff}#objective{padding:8px 14px;background:#244943;min-height:47px;font-size:12px;border-top:1px solid #44634f;border-bottom:1px solid #44634f;cursor:pointer}#objective strong{color:var(--gold);display:block}.view{display:none;min-height:0;flex:1}.view.active{display:flex;flex-direction:column}.mapbar{display:flex;align-items:center;gap:5px;padding:7px 10px}.mapbar span{flex:1;color:var(--dim);font-size:11px}.mapbar button{min-height:36px;padding:5px 11px;font-size:12px}canvas{display:block;flex:1;min-height:70px;width:100%;image-rendering:pixelated;touch-action:none}.buildbar{display:flex;gap:6px;padding:8px 10px 0}.buildbar button{flex:1;font-size:12px;padding:8px}.buildbar button.chosen{border-color:var(--gold);color:var(--gold)}#buildHint{font-size:11px;color:var(--dim);margin:7px 12px;min-height:27px}#selection:empty{display:none}#selection{background:#24464a;padding:10px 12px;font-size:12px;border-top:1px solid var(--line)}#selection .row{margin-top:7px;gap:5px}#selection button{font-size:11px;padding:6px;flex:1}nav{display:flex;padding:6px 7px calc(6px + env(safe-area-inset-bottom));gap:4px;border-top:1px solid var(--line);background:#122c32;flex-shrink:0}nav button{flex:1;font-size:10px;min-width:0;padding:7px 2px;background:transparent;border-color:transparent}nav button span{display:block;font-size:18px;margin-bottom:2px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.wrap{flex-wrap:wrap}.muted{color:var(--dim)}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase}h2{font:700 27px Georgia,serif;margin:5px 0 9px}h3{font-size:16px;margin:0 0 6px}p{line-height:1.5;margin:6px 0 12px}#contentView{overflow:auto}#content{padding:17px 13px 30px}.card{border:1px solid var(--line);border-radius:13px;background:linear-gradient(130deg,#24474b,#18373d);padding:15px;margin-bottom:10px}.card p{font-size:12px;color:var(--dim)}.card.done{border-color:#75ae87}.cost{font-size:11px;line-height:1.8;color:#edcf96;margin:8px 0}.cost .missing{color:#ffaaa2}.card button{width:100%}.row button{width:auto}.hero{position:relative;overflow:hidden;min-height:140px;background:radial-gradient(ellipse at 80% 80%,#507249,#1b4546 65%)}.hero:after{content:'✦';position:absolute;right:22px;top:15px;font-size:90px;color:#9bc76d22;pointer-events:none}.badge{font-size:10px;color:#addec0}.meter{height:6px;border-radius:8px;background:#0c252b;overflow:hidden;margin:10px 0}.meter i{display:block;background:#f1c77c;height:100%}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid .card{margin:0;padding:12px}.grid button{text-align:left}.grid .locked{opacity:.65}dialog{width:min(94vw,550px);max-height:85dvh;border:1px solid #597875;border-radius:15px;background:#142f36;color:var(--text);padding:15px}dialog::backdrop{background:#04181de0}.dialoghead{display:flex;align-items:center;justify-content:space-between;gap:10px}.dialoghead h2{font-size:23px}.dialoghead button{font-size:22px}#dialogBody{padding-top:10px}#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);max-width:90vw;width:max-content;background:#f6d69b;color:#302a24;border-radius:10px;padding:12px 18px;box-shadow:0 5px 30px #0007;z-index:9;display:none;font-size:13px;font-weight:600}#adventureHeader{padding:12px 15px}#arena{position:relative;flex:1;min-height:100px;overflow:hidden;touch-action:manipulation;background:radial-gradient(ellipse at 50% 35%,#365b51,#162f3e);border-top:1px solid #557165;border-bottom:5px solid #bb9c6b}#arena:before{content:'';position:absolute;inset:0;background-image:radial-gradient(#a2b46b44 1px,transparent 2px);background-size:25px 27px;pointer-events:none}.slime{position:absolute;width:64px;height:60px;background:none;border:0;padding:0;min-height:0;filter:drop-shadow(0 7px 1px #071e2c66);will-change:top}.slime svg{width:100%;height:100%;image-rendering:pixelated;pointer-events:none}.slime b{position:absolute;top:-10px;left:0;width:100%;font-size:10px;color:#fff}.waveBanner{position:absolute;inset:35% 10% auto;text-align:center;font:26px Georgia;color:var(--gold);pointer-events:none}.hit{position:absolute;pointer-events:none;color:#ffed99;animation:rise .5s forwards;font-weight:800}@keyframes rise{to{transform:translateY(-35px);opacity:0}}#adventureControls{padding:12px}.fishingTrack{height:70px;background:#143c49;border:2px solid #668e80;border-radius:12px;position:relative;margin:25px 16px}.catchZone{position:absolute;top:5px;bottom:5px;background:#89c89288;border:2px solid #b1efad}.bobber{position:absolute;width:5px;top:-7px;bottom:-7px;background:#ffe1a1;box-shadow:0 0 10px #ffe1a1}.fishArt{text-align:center;font-size:80px;margin:35px 0 0;color:#9cdae0}#adventureControls button{width:100%}.settings button{display:block;width:100%;margin:8px 0}.notice{padding:12px;background:#304d4b;border-radius:8px;font-size:12px;margin:10px 0}a{color:var(--gold)}@media(max-height:650px){header{padding:4px 12px}header img{height:30px;width:30px}#objective{min-height:37px;padding:4px 12px}#resourceBar{padding:3px 10px}.mapbar{padding:3px 10px}nav button{min-height:40px}nav button span{font-size:14px}#buildHint{margin:4px 12px}}
+/* Treasure Tides art direction. Generated panel art uses nine-slice borders. */
+:root{--ink:#102c2e;--panel:#143f3c;--line:#8f7543;--gold:#efca79;--dim:#c0c9b0;--text:#fff0ce}
+body{background:#09262b}main{background:#103a38}
+header{padding:6px 12px;height:54px;flex-shrink:0;background:linear-gradient(90deg,#102d2d,#1b4540)}
+header img{width:35px;height:35px;border-radius:50%;box-shadow:0 0 0 1px #c8a667}
+h1{font-size:18px;letter-spacing:2px;text-shadow:0 2px 2px #000}header span{font-size:8px;letter-spacing:3px;color:#c1cdaa}header button{min-height:36px;padding:3px 10px}
+#resourceBar{padding:3px 8px 6px;gap:4px;overflow:hidden;min-height:34px;background:#12332f}
+.resource{font-size:10px;background:#0b2629b0;border:1px solid #8a784677;padding:5px 6px;border-radius:5px}
+#resourceBar .resource{flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#objective{padding:6px 12px;background:linear-gradient(90deg,#514830,#1e4e3f);border-top:1px solid #af9256;border-bottom:1px solid #a28b4c;min-height:39px;font-size:10px;box-shadow:0 4px 9px #001b2577;z-index:2}
+#objective strong{font-size:11px;letter-spacing:.4px}
+#islandView{position:relative}
+.mapbar{position:absolute;left:8px;right:8px;top:8px;z-index:2;gap:4px;padding:0;pointer-events:none}
+.mapbar>*{pointer-events:auto}.mapbar span{background:#0a2a2aca;border:1px solid #b2a36a77;backdrop-filter:blur(8px);padding:7px;border-radius:5px;font-size:9px;flex:1}
+.mapbar button{padding:4px 8px;min-height:32px;font-size:10px;background:#173f3ae0;border:1px solid #c2a466;border-radius:6px;box-shadow:0 2px 5px #09242770}
+canvas{image-rendering:auto;background:#1a747a}
+.buildbar{padding:7px 8px 0;background:#14322d;gap:5px}
+.buildbar button{font-size:11px;min-height:44px;border-radius:3px}
+#buildHint{background:#14322d;margin:0;padding:6px 12px 7px;font-size:10px;min-height:34px;color:#bcc9ae}
+#selection{background:#133d35;border-color:#c6a363;padding:8px 12px;box-shadow:0 -4px 20px #082b3266}
+nav{padding-top:4px;padding-bottom:calc(5px + env(safe-area-inset-bottom));background:linear-gradient(#234b3f,#152e2a);border-top:2px solid #ad8749}
+nav button{font-size:10px;min-height:49px;border-radius:6px}nav button span{font-size:17px;margin-bottom:0}
+nav button.activeTab{color:#fff0b8;background:linear-gradient(#886735,#51442c);border:1px solid #f6d38c;box-shadow:inset 0 0 10px #e6b46533}
+button{border-color:#b49251;border-radius:6px;background:linear-gradient(#3d6957,#244e44);box-shadow:inset 0 1px 0 #fff2aa25,0 2px 2px #071f2244;text-shadow:0 1px 1px #071f2277}
+button.gold{background:linear-gradient(#ffe2a0,#d9ab5c);border-color:#ffebb6;color:#352c1d;text-shadow:0 1px #ffffb388}
+.card,dialog{border:16px solid transparent;border-image:url('./assets/frame.webp') 150 fill / 16px / 0 stretch;border-radius:0;background:none;box-shadow:0 5px 12px #041e2555;padding:7px 8px 9px}
+.card{margin-bottom:12px}
+.card h3{color:#ffe1a0;font-family:Georgia,serif;font-size:20px}
+.card p{color:#d1d3b9;line-height:1.5}
+.card.done{filter:saturate(.8)}
+dialog{border-width:22px;border-image-width:22px;padding:6px 8px 9px;width:min(95vw,550px);background:#103b35}
+dialog::backdrop{background:#031e27dd;backdrop-filter:blur(4px)}
+#contentView{background:radial-gradient(ellipse at 80% 0%,#3e6e5a,#14362f 70%)}
+#content{padding:16px 10px 30px}#content>h2{color:#ffdea1;text-shadow:0 2px #0006}
+.hero{background:linear-gradient(#082f2b44,#072b29e0),url('./assets/marsh.webp') center/cover;border-image:none;border:1px solid #bba065;border-radius:8px;padding:18px;min-height:175px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero:after{display:none}
+.grid{gap:9px}
+.grid .card{position:relative;display:flex;flex-direction:column;align-items:stretch;border-width:12px;border-image-width:12px;padding:3px 2px 6px;text-align:center}
+.grid .card h3{font-size:16px}.grid .card p{font-size:11px}
+.grid .card button{margin-top:auto;text-align:center;font-size:11px;padding:7px 4px}
+.gameSprite{display:block;width:100px;height:100px;margin:0 auto 4px;background-image:url('./assets/atlas.webp');background-size:400% 400%;background-repeat:no-repeat;flex-shrink:0}
+.grid .gameSprite{width:90px;height:90px}
+.cost{font-size:10px;color:#f0dba7;margin:7px 0}
+#arena{background:linear-gradient(#0d2d3733,#103b3566),url('./assets/marsh.webp') center/cover;border-top:1px solid #b49e69;border-bottom:3px solid #b49e69}
+#arena:before{display:none}
+#arena>p{text-align:center;padding:10px}
+#arena .slime{width:76px;height:72px;box-shadow:none;text-shadow:none}
+.slimeSprite{display:block;width:100%;height:100%;background:url('./assets/atlas.webp') 100% 100%/400% 400% no-repeat;pointer-events:none}
+.slime b{top:-9px;left:20%;width:60%;background:#10362ee8;border:1px solid #e6d39799;padding:2px;border-radius:6px;font-size:9px}
+.slime.boss .slimeSprite{filter:hue-rotate(290deg) saturate(1.3)!important}
+.slime.swift .slimeSprite{filter:hue-rotate(90deg)!important}
+.slime.struck .slimeSprite{animation:squish .18s}
+@keyframes squish{50%{transform:scale(1.18,.78);filter:brightness(1.6)}}
+.waveBanner{background:#0b322cdd;border:1px solid #e5c78b;border-radius:8px;padding:20px 5px;font-size:24px;box-shadow:0 4px 30px #001e22aa}
+#toast{border:2px solid #caa569;background:linear-gradient(#fff0be,#e1bd79);color:#302b1f;font-size:12px;bottom:85px}
+#toast[style*="block"]{animation:pop .2s}
+@keyframes pop{from{transform:translate(-50%,10px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+#content .row{gap:6px}#adventureHeader{background:linear-gradient(90deg,#274c3c,#133632);padding:10px 14px}
+#adventureHeader h2{font-size:24px;margin:3px 0 5px;color:#ffe2a1}
+#adventureHeader p,#adventureHeader>div:last-child{font-size:11px}
+#adventureControls{background:#16392f;padding:10px}
+#adventureControls .row button{width:auto;flex:1;font-size:11px}
+.perkChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.perkChoices>strong{grid-column:1/-1;color:#ffe1a0;text-align:center;margin-bottom:3px}
+.perkChoices>button{padding:10px 5px;min-height:55px;line-height:1.25;font-size:11px}
+.perkChoices>button small{display:block;font-size:9px;color:#c7d3bb;margin-top:4px}
+.perkChoices>button.gold{grid-column:1/-1;min-height:40px}
+.fishArt{height:80px;background:radial-gradient(ellipse,#99ded075,transparent 70%);margin:15px auto 0}
+.fishingTrack{margin-top:12px;box-shadow:0 4px 30px #001e2266}
+.inventoryGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.inventoryGrid .resource{padding:13px 10px;font-size:12px}
+.salvageGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:min(90%,380px);margin:20px auto}
+.cargoTile{aspect-ratio:1;min-height:60px;font:700 30px Georgia;color:#ffe4a1;border:9px solid transparent;border-image:url('./assets/frame.webp') 150 fill / 9px / 0 stretch;background:#154437}
+.cargoTile:disabled{opacity:1}.cargoTile.trap{color:#ff8f7d;background:#803d30}.cargoTile.rare{color:#a6ffb9}
+@media(max-height:650px){header{height:44px}.mapbar{top:5px}#buildHint{min-height:28px;padding:4px 12px}nav button{min-height:44px}#objective{min-height:36px}.perkChoices>button{padding:7px 4px;min-height:44px}#adventureHeader{padding:6px 12px}}
+#resourceBar{cursor:pointer}

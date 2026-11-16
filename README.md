@@ -1,32 +1,38 @@
-# Tideforge — Wild Tides v3
+# Tideforge — Treasure Tides v4
 
-A portrait, offline-capable factory and expedition game. No build step, accounts, dependencies or external game assets.
+## Update your existing website
+Extract the ZIP. Upload all files and the assets folder into the root of the SAME GitHub Pages repository, replacing the matching files. Keep the assets folder intact.
+The old game.js from v1/v2 is unused and may be removed.
+After deployment, open the website online, close it and reopen it if the previous version still appears.
+Install using Android Chrome → menu → Install app / Add to home screen.
+The first online visit caches the game and all three generated art sheets.
+Keep the same website URL and browser to retain your v3 island. Export a backup in Settings first if you want an additional copy.
 
-## Publish on GitHub Pages
-1. Extract this ZIP.
-2. Upload index.html, style.css, model.js, app.js, sw.js, manifest.json, icon192.png and icon512.png into the root of your existing repository. Replace the matching files. The old game.js can be removed.
-3. Settings → Pages → Deploy from a branch → main → / (root).
-4. Open your Pages website online. If the old version is visible, close and reopen it after deployment.
-5. Android Chrome → menu → Install app or Add to home screen. The website must load online once to cache all game files.
+## New in Treasure Tides
+- AI-generated 16-cell sprite sheet used for trees, deposits, machines, catalogue illustrations and enemies.
+- AI-generated wooden/brass panel texture rendered as stretchable menu and card frames.
+- AI-generated marsh scene used behind expeditions and the exploration introduction.
+- Smaller HUD, full-size map, no permanent grid. The grid appears when building.
+- Tap the resource bar for all inventory counts.
+- Each cleared slime wave offers a choice: bonus damage, chained wounds, or hull repair. Powers last for that expedition.
+- Freeze slows slimes for 3 seconds with a 12-second cooldown. Swift slimes and every-fifth-wave bosses add pressure.
+- Consecutive attack taps can trigger bonus gel on a kill. Lucky gathering occurs every eighth quick gather.
+- Factory overdrive triples active production for 20 seconds, with 60 seconds between activations.
+- Wreck salvage offers five picks among 12 cargo tiles. Rare chests contain gel and gears. Two traps halve the haul. Bank early or keep searching.
+- Short synthesized sound effects. Toggle sound in Settings.
+- One-button starter factory in the handbook for an empty island.
 
-Keep the same repository URL to migrate your old v1/v2 inventory and machines automatically. The new quest campaign begins at its first story. Export your old island before replacing files if you want an additional backup. Saves belong to this browser/device and this website address.
+## Basic controls
+Gather / select exits build or move mode. Tap a natural tile to gather, or tap a machine to select.
+Build opens the illustrated catalogue. Choose a machine and tap a tile. Turn sets the direction for new machines.
+When a machine is selected, Turn rotates that machine immediately. Move relocates it. More opens upgrades, cargo collection and dismantling.
+Drag to pan, + / − to zoom and Center to return home.
 
-## Playing
-Tap trees, rocks and blue seams for materials. Resources are renewable.
-Your first blue iron seam is two tiles west of center. Place a Drill there, a Furnace immediately east and a Depot immediately east of that. Point arrows east. Belts bridge gaps and turn corners. One item advances at most one tile per simulation tick.
-Select Gather / select before tapping a machine to turn, pause, move, collect, upgrade or dismantle it. The direction button turns the selected machine immediately. In build mode it sets the direction for future machines.
-Sawmills need trees and quarries need grey rock. They deliver straight into inventory. Other production needs connected outputs.
-Drag to pan, use + / − to zoom, and Center to return home.
+The starter production line is Drill at (-2,0) → Furnace at (-1,0) → Depot at (0,0), all pointing east. Processing machines need connected output arrows. Belts bridge gaps.
+Sawmills need trees. Quarries need grey rocks. These deliver directly to your inventory.
+Expand at the harbour. Copper appears at radius 5, crystal at radius 7.
+The twelve quests and six research technologies lead through copper, steel and crystal to the Tide Beacon.
+Explore also includes slime expeditions and timing-based fishing. Craft includes equipment upgrades and parts. Harbour includes shipping orders and trades.
+Settings contains export, import, sound, installation guidance and confirmed reset.
 
-Follow the twelve quests. Expand to radius 5 for copper and 7 for crystal.
-Research six technologies through iron, gel, copper, steel and crystals to restore the beacon.
-Craft gears and upgrade your blade, ship hull and fishing rod.
-Slime expeditions have escalating waves and a boss every fifth wave. Tap slimes to attack. Survive a wave to bank all loot or continue. Retreat banks everything earned so far. Hull defeat recovers half. Interrupted sessions recover saved cargo on reopening.
-Fishing uses the gold moving marker. Tap REEL inside the green zone. Every third consecutive catch doubles the fish. A short cooldown prevents repeated taps from granting duplicate fish.
-Harbour orders and four exchanges turn surplus supplies into useful resources.
-
-Factory production continues while exploring and simulates up to two hours away.
-Settings contains export, import and confirmed reset. Dialogs pause the action minigames.
-
-## Verification
-See CHECKS.md for automated coverage and remaining device checks.
+Automatic saves use this device and browser. Production simulates up to two hours away. Earned expedition/salvage cargo is checkpointed for recovery after an interrupted session. Active-run powers and overdrive reset when reopening.

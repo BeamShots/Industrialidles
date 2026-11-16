@@ -61,7 +61,7 @@ function normalize(raw){
   if(Math.abs(x)>16||Math.abs(y)>16)continue;
   s.machines[id]={type:m.type,d:bounded(m.d,0,3),level:bounded(m.level,1,3),item:resources[m.item==='ingot'?'bars':m.item]?(m.item==='ingot'?'bars':m.item):null,progress:0,paused:!!m.paused};
  }
- if(raw.version===3&&raw.pendingLoot){for(const k of ['gel','ore','copper','crystal'])s.inventory[k]+=bounded(raw.pendingLoot[k],0,100000);}
+ if(raw.version===3&&raw.pendingLoot){for(const k of Object.keys(resources))s.inventory[k]+=bounded(raw.pendingLoot[k],0,100000);}
  s.savedAt=Number.isFinite(raw.savedAt)?Math.min(Date.now(),raw.savedAt):Date.now();
  return s;
 }
